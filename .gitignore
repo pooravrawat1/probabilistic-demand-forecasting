@@ -1,0 +1,28 @@
+# Local environments and secrets
+.venv/
+venv/
+.env
+.env.*
+!.env.example
+
+# Python and tooling
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+.ipynb_checkpoints/
+
+# Raw data, generated tables, and model artifacts
+/data/
+/artifacts/
+*.parquet
+*.duckdb
+*.duckdb.wal
+LD2011_2014.txt
+LD2011_2014.txt.zip
+
+# Local operating-system files
+.DS_Store
