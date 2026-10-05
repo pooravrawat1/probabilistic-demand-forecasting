@@ -1,0 +1,17 @@
+[build-system]
+requires = ["setuptools>=75"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "probabilistic-demand-forecasting"
+version = "0.1.0"
+description = "Auditable next-day electricity demand spike forecasting research"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = []
+
+[project.scripts]
+demand-forecast = "demand_forecasting.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]

@@ -1,0 +1,31 @@
+[run]
+random_seed = 42
+
+[source]
+url = "https://archive.ics.uci.edu/static/public/321/electricityloaddiagrams20112014.zip"
+filename = "electricityloaddiagrams20112014.zip"
+member = "LD2011_2014.txt"
+title = "ElectricityLoadDiagrams20112014"
+creator = "Artur Trindade"
+doi = "10.24432/C58C86"
+license = "CC BY 4.0"
+
+[audit]
+interval_minutes = 15
+expected_intervals_per_day = 96
+activation_window_days = 14
+activation_positive_days = 10
+exclude_dst_transition_days = true
+extreme_median_multiplier = 2.0
+extreme_p99_multiplier = 1.5
+
+[study]
+training_start = "2012-01-01"
+training_end = "2013-12-31"
+minimum_valid_training_days = 180
+selection_start = "2014-01-01"
+selection_end = "2014-03-31"
+calibration_start = "2014-04-01"
+calibration_end = "2014-06-30"
+test_start = "2014-07-01"
+test_end = "2014-12-31"

@@ -1,6 +1,6 @@
 # Design
 
-**Status:** Proposed architecture. Dataset-specific rules marked **TBD** must be resolved from the audit before modeling.
+**Status:** Source audit and quality rules established; modeling architecture remains proposed. See the [data audit](data_audit.md) for evidence.
 
 ## Data flow
 
@@ -18,9 +18,9 @@ Use Python for a reproducible pipeline, Parquet for intermediate tables, and Duc
 
 ## Source and day assignment
 
-The source is expected to be a semicolon-delimited wide table with a timestamp and one column per client. Ingest it in bounded chunks or with DuckDB rather than requiring a single in-memory reshape. Verify delimiter, timestamp parsing, client columns, duplicate and missing timestamps, numeric conversion, and observed coverage. Preserve `source_timestamp` separately from `assigned_local_date`.
+The source is a semicolon-delimited wide table with a timestamp and 370 client columns. The standard-library audit streams the unchanged ZIP member without a full in-memory reshape. It verifies delimiter, timestamps, client columns, numeric conversion, and coverage. Preserve `source_timestamp` separately from `assigned_local_date` in future interval tables.
 
-Before aggregation, inspect the source documentation and representative days to decide whether `00:00` belongs to the prior interval/day. Audit ordinary days and both daylight-saving transitions in Portuguese local time. Record the observed interval-count distribution and the chosen rule. The validity rule for incomplete days is **TBD**; apply it consistently across thresholds, labels, features, and eligibility. Retain quality flags and an exclusion ledger. Review extreme values against nearby readings before deciding whether they are errors.
+Assign `00:00` to the prior local day because timestamps mark interval ends; the audited source has 96 assigned intervals on every day. Require 96 unique, on-grid timestamps and 96 finite, nonnegative numeric readings per client-day. Exclude the eight Portuguese daylight-saving transition dates from modeled days despite their 96 source labels. The audit stores quality flags and a client exclusion ledger. Review the 25 flagged extreme client-days against nearby readings before identifying any as errors; the audit does not delete them.
 
 ## Logical tables and grain
 
@@ -34,7 +34,7 @@ Before aggregation, inspect the source documentation and representative days to 
 
 ## Fitting and feature lineage
 
-Use 2011 only for historical context and warm-up. Determine the final activation rule and valid-day policy from the audit, then form the eligible client set using at least 180 valid **2012–2013** days after activation. Fit each eligible client's 90th-percentile peak threshold from that same training period. Fit all load scaling and high-use cutoffs from training data only. Save these fitted values with their provenance and reuse them unchanged in later splits.
+Use 2011 only for historical context and warm-up. The audit defines activation as the first day of 14 consecutive model-valid days with positive use on at least 10 days. It found **342 eligible clients** with at least 180 valid **2012–2013** days after activation. Fit each eligible client's 90th-percentile peak threshold from that training period. Fit all load scaling and high-use cutoffs from training data only. Save these fitted values with their provenance and reuse them unchanged in later splits.
 
 Create one example for each eligible client and valid target date, with `forecast_date = target_date − 1 local day`. Its features can read only client-day records through the forecast date. Examples requiring unavailable lag or rolling history need a documented missing-feature policy; exclude or impute them consistently for all methods, with counts. Calendar features may describe the target date because that date is known at forecast time. For every feature, store or test its latest source date against `feature_cutoff`.
 

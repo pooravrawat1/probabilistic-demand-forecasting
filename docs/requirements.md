@@ -1,12 +1,12 @@
 # Requirements
 
-**Status:** Proposed. This document restates the supplied PRD as implementable requirements; no data audit or experiment has been completed.
+**Status:** Source audit complete; modeling and experiments have not been run. See the [data audit](data_audit.md) for observed counts and fixed quality rules.
 
 ## Goal and scope
 
 At the end of local day **d**, issue a probability that client **c** will have an unusually high 15-minute demand reading on local day **d + 1**. The primary question is whether recent consumption predicts these events better than historical and weekly-pattern baselines. A secondary question asks whether performance differs between clients with regular and irregular use.
 
-The primary study evaluates **future days for clients observed during training**. It does not establish performance for previously unseen clients. The input is the [UCI Electricity Load Diagrams 2011–2014 dataset](https://archive.ics.uci.edu/dataset/321/electricityloaddiagrams20112014.) by Artur Trindade ([DOI: 10.24432/C58C86](https://doi.org/10.24432/C58C86), CC BY 4.0). The PRD describes 370 clients and 15-minute readings; actual dimensions, date coverage, and file structure are **TBD pending ingestion**.
+The primary study evaluates **future days for clients observed during training**. It does not establish performance for previously unseen clients. The input is the [UCI Electricity Load Diagrams 2011–2014 dataset](https://archive.ics.uci.edu/dataset/321/electricityloaddiagrams20112014.) by Artur Trindade ([DOI: 10.24432/C58C86](https://doi.org/10.24432/C58C86), CC BY 4.0). The audit confirmed 370 clients, 140,256 15-minute timestamp rows, and assigned dates from 2011-01-01 through 2014-12-31.
 
 ## Forecast and target
 
@@ -19,13 +19,13 @@ The primary study evaluates **future days for clients observed during training**
 | Positive label | Target-day peak is **strictly greater** than the frozen client threshold. Otherwise the label is 0, provided the target day is valid. |
 | Output | Probability in [0, 1]; an optional alert decision uses a rule chosen before final test evaluation. |
 
-The timestamp-to-local-day rule is **TBD after inspecting the source convention**, especially whether a `00:00` record closes the preceding day. The audit must establish expected interval counts for ordinary and daylight-saving days before defining valid days. Label prevalence in each split must be measured; the training percentile does not guarantee 10% prevalence in later periods.
+The source labels the end of each interval: `00:00` closes the preceding local day. This produces 96 timestamp rows on each of the 1,461 assigned dates. Daylight-saving dates also have 96 source rows but are excluded from modeled days because of the source's special representation. Label prevalence in each split must still be measured; the training percentile does not guarantee 10% prevalence in later periods.
 
 ## Data and eligibility
 
 1. Keep the original download unchanged outside Git. A repeatable Python pipeline must download or locate it, verify its structure, and produce processed data without spreadsheet edits.
 2. Audit duplicate timestamps, missing or nonnumeric values, negative values, unexpected interval counts, long zero runs, daylight-saving days, and exceptional readings. Flag plausible extreme loads for review rather than automatically removing them.
-3. Establish a sustained-nonzero activation rule from the data audit. Ignore zero-filled pre-activation history for eligibility and training statistics. The final rule and valid-day criteria are **TBD** and must be recorded before modeling.
+3. Use the first day of the earliest 14 consecutive model-valid days with positive use on at least 10 days as activation. Ignore earlier history for eligibility and training statistics. A model-valid day requires 96 unique on-grid intervals, 96 finite and nonnegative numeric readings, and no daylight-saving transition.
 4. Include a client in the primary study only if it has at least **180 valid training days after activation**. Record each excluded client and reason. Use identical eligible client-day examples for every compared method.
 5. Distinguish power (**kW**) from estimated energy (**kWh**): each valid 15-minute interval contributes `kW × 0.25 hours` to the daily energy estimate. The spike target uses peak kW.
 6. Store row counts, invalid counts, and exclusion counts after each transformation. Document source attribution, units, schemas, and quality decisions in a data audit and data dictionary.
@@ -54,4 +54,4 @@ Compare a client-specific training prevalence baseline, a weekly-pattern probabi
 
 The repository must eventually provide a documented command sequence for ingestion, feature construction, training, evaluation, and figure generation; fixed random seeds where applicable; recorded configuration and dependency versions; and focused checks for day assignment, daylight-saving cases, training-only fitting, past-only features, split boundaries, and identical evaluation rows.
 
-Final deliverables are a reproducible repository, data audit and dictionary, experiment record, results table and labeled plots, an **IEEE-format report of at least four pages**, and a **10-minute presentation**. Observed counts, scores, clusters, and conclusions remain **TBD** until verified. Completion means another person can rebuild the modeling table, rerun comparisons, reproduce figures, and verify that each feature predates its target day.
+Final deliverables are a reproducible repository, data audit and dictionary, experiment record, results table and labeled plots, an **IEEE-format report of at least four pages**, and a **10-minute presentation**. Modeling counts, scores, clusters, and conclusions remain **TBD** until verified. Completion means another person can rebuild the modeling table, rerun comparisons, reproduce figures, and verify that each feature predates its target day.

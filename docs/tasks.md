@@ -1,14 +1,14 @@
 # Tasks
 
-**Status:** Planned. Check items only when implementation or evidence exists; observed values and findings are **TBD**.
+**Status:** Source audit complete. Modeling, experiments, and conclusions are still **TBD**.
 
 ## 1. Establish the source and reproducible workspace
 
-- [ ] Add Python project metadata, locked or recorded dependency versions, seed/configuration files, and documented run commands.
-- [ ] Implement source download or local-path ingestion while keeping the unchanged UCI file outside Git; record attribution, license, source identity, and actual dimensions.
-- [ ] Audit timestamps, interval counts, daylight-saving cases, client coverage, zero runs, missing/nonnumeric/negative values, duplicates, and exceptional readings.
-- [ ] Decide and document the timestamp-to-day, activation, valid-day, and confirmed-error rules before modeling; record any split-date changes before test inspection.
-- [ ] Produce a data audit, data dictionary, quality flags, and counts/exclusion ledger for each transformation.
+- [x] Add Python project metadata, recorded runtime version, seed/configuration files, and documented source-audit commands. The audit has no third-party runtime dependencies.
+- [x] Implement source download and local ZIP/text ingestion while keeping the unchanged UCI file outside Git; record attribution, license, source identity, and actual dimensions.
+- [x] Audit timestamps, interval counts, daylight-saving cases, client coverage, zero runs, missing/nonnumeric/negative values, duplicates, and exceptional readings.
+- [x] Decide and document timestamp-to-day, activation, valid-day, and confirmed-error rules before modeling. The planned split dates remain unchanged.
+- [x] Produce a [data audit](data_audit.md), [data dictionary](data_dictionary.md), quality flags, and counts/exclusion ledger for source-audit transformations.
 
 ## 2. Build client-day data and targets
 
@@ -46,8 +46,8 @@
 
 | Decision | Current status |
 | --- | --- |
-| Source timestamp and daylight-saving day assignment | TBD after audit |
-| Sustained-nonzero activation and valid-day criteria | TBD after audit |
-| Missing-history and extreme-value treatment | TBD after audit |
-| Any change to the planned date splits | TBD before test inspection |
+| Source timestamp and daylight-saving day assignment | Fixed in [data audit](data_audit.md) |
+| Sustained-nonzero activation and valid-day criteria | Fixed in [data audit](data_audit.md) |
+| Missing-history and extreme-value treatment | Missing-history policy TBD; extremes flagged and retained pending review |
+| Any change to the planned date splits | None; current dates retained |
 | Exact PR-curve area estimator, calibration method, and tie rule | TBD in experiment record |
