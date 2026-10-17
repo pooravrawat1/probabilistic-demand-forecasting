@@ -19,7 +19,7 @@ The download goes to ignored `data/raw/`; audit outputs go to ignored `data/audi
 
 ## Documents
 
-- [Requirements](docs/requirements.md), [design](docs/design.md), and [tasks](docs/tasks.md)
+- [Requirements](docs/requirements.md), [design](docs/design.md), and the ordered [project roadmap](docs/tasks.md)
 - [Data audit](docs/data_audit.md) and [data dictionary](docs/data_dictionary.md)
 
 Source: [UCI Electricity Load Diagrams 2011–2014](https://archive.ics.uci.edu/dataset/321/electricityloaddiagrams20112014.) by Artur Trindade, [DOI: 10.24432/C58C86](https://doi.org/10.24432/C58C86), [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). The source file is not committed.
