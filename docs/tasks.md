@@ -1,9 +1,8 @@
 # Project roadmap
 
-**Current status:** The source download, audit, quality rules, and primary-study
-eligibility audit are complete. The next milestone is to turn the audited source
-into tested interval and client-day tables. No modeling result or final-test
-metric exists yet.
+**Current status:** The source audit and analysis-ready data build are complete.
+The next milestone is to freeze client thresholds and create target labels. No
+modeling result or final-test metric exists yet.
 
 This is the project's ordered implementation plan. Check off an item only when
 its code, focused tests, generated-output manifest, and documentation agree.
@@ -36,35 +35,35 @@ The audit found 342 eligible clients. The chronological split remains:
 This is the immediate priority. Finish this milestone before implementing
 features or models.
 
-- [ ] Add and pin the runtime dependencies needed for Parquet, DuckDB queries,
+- [x] Add and pin the runtime dependencies needed for Parquet, DuckDB queries,
   modeling, plotting, and testing. Record the resolved environment alongside
   experiment artifacts.
-- [ ] Add a `build-data` CLI command that reads the unchanged source and writes
+- [x] Add a `build-data` CLI command that reads the unchanged source and writes
   deterministic outputs under `data/processed/` without spreadsheet or notebook
   edits.
-- [ ] Build `interval_readings` at client × source-interval grain with
+- [x] Build `interval_readings` at client × source-interval grain with
   `client_id`, `source_timestamp`, `assigned_local_date`, `kw`, and applicable
   quality flags. Use a streaming or partitioned implementation; do not require
   all 51,894,720 long-form readings in memory at once.
-- [ ] Build `client_day` at client × assigned-local-date grain with reading
+- [x] Build `client_day` at client × assigned-local-date grain with reading
   counts, peak kW, mean kW, estimated energy kWh, positive-use, source-valid,
   model-valid, activation, eligibility, and exclusion fields.
-- [ ] Verify that daily energy is `sum(kw × 0.25 hours)`, while daily peak and
+- [x] Verify that daily energy is `sum(kw × 0.25 hours)`, while daily peak and
   the target threshold remain in kW.
-- [ ] Persist a client eligibility table rather than relying only on a count;
+- [x] Persist a client eligibility table rather than relying only on a count;
   reconcile it with the audit result of 342 eligible clients and its 28 excluded
   clients.
-- [ ] Write the processed tables as Parquet and expose stable DuckDB views or a
+- [x] Write the processed tables as Parquet and expose stable DuckDB views or a
   catalog for inspection.
-- [ ] Write a build manifest containing source hash, configuration hash or
+- [x] Write a build manifest containing source hash, configuration hash or
   snapshot, code revision, Python/dependency versions, output schemas, row
   counts, exclusion counts, run time, and generated-file paths.
-- [ ] Add a tiny synthetic fixture so data-building tests run without the full
+- [x] Add a tiny synthetic fixture so data-building tests run without the full
   261 MB archive.
-- [ ] Test unique keys, date coverage, midnight assignment, daylight-saving
+- [x] Test unique keys, date coverage, midnight assignment, daylight-saving
   exclusion, invalid-reading behavior, activation boundaries, eligibility,
   aggregation arithmetic, and agreement between audit and processed counts.
-- [ ] Update the data dictionary from “planned” to the actual schemas and add
+- [x] Update the data dictionary from “planned” to the actual schemas and add
   the exact rebuild command to the README.
 
 **Milestone 1 is done when:** one documented command rebuilds both Parquet

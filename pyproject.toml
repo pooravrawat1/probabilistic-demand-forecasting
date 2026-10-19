@@ -8,7 +8,17 @@ version = "0.1.0"
 description = "Auditable next-day electricity demand spike forecasting research"
 readme = "README.md"
 requires-python = ">=3.11"
-dependencies = []
+dependencies = [
+    "duckdb==1.5.6",
+    "matplotlib==3.11.2",
+    "numpy==2.5.4",
+    "scikit-learn==1.9.1",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest==9.1.1",
+]
 
 [project.scripts]
 demand-forecast = "demand_forecasting.cli:main"

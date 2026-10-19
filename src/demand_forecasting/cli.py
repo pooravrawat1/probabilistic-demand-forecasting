@@ -1,4 +1,4 @@
-"""Command line entry point for source acquisition and audit."""
+"""Command line entry point for source acquisition, audit, and data building."""
 
 from __future__ import annotations
 
@@ -22,6 +22,22 @@ def main() -> None:
     audit.add_argument("--source", type=Path, default=Path("data/raw/electricityloaddiagrams20112014.zip"))
     audit.add_argument("--output-dir", type=Path, default=Path("data/audit"))
 
+    build = commands.add_parser(
+        "build-data", help="Build analysis-ready Parquet tables and a DuckDB catalog"
+    )
+    build.add_argument(
+        "--source",
+        type=Path,
+        default=Path("data/raw/electricityloaddiagrams20112014.zip"),
+    )
+    build.add_argument("--output-dir", type=Path, default=Path("data/processed"))
+    build.add_argument(
+        "--audit-dir",
+        type=Path,
+        default=Path("data/audit"),
+        help="Audit directory whose summary counts should be reconciled",
+    )
+
     args = parser.parse_args()
     with args.config.open("rb") as handle:
         config = tomllib.load(handle)
@@ -37,6 +53,19 @@ def main() -> None:
               f"{summary['source']['client_columns']:,} clients")
         print(f"Eligible clients: {summary['eligibility']['eligible_clients']:,}")
         print(f"Audit outputs: {args.output_dir}")
+    elif args.command == "build-data":
+        from .build import build_data
+
+        manifest = build_data(
+            args.source,
+            args.output_dir,
+            config,
+            audit_dir=args.audit_dir,
+        )
+        print(f"Built {manifest['counts']['interval_rows']:,} interval readings and "
+              f"{manifest['counts']['client_day_rows']:,} client-days")
+        print(f"Eligible clients: {manifest['counts']['eligible_clients']:,}")
+        print(f"Processed outputs: {args.output_dir}")
 
 
 if __name__ == "__main__":

@@ -1,6 +1,9 @@
 # Design
 
-**Status:** Source audit and quality rules established; modeling architecture remains proposed. See the [data audit](data_audit.md) for evidence.
+**Status:** Source audit, quality rules, and analysis-ready data construction are
+implemented; target, feature, and modeling architecture remains proposed. See
+the [data audit](data_audit.md) and [data dictionary](data_dictionary.md) for
+evidence and schemas.
 
 ## Data flow
 
