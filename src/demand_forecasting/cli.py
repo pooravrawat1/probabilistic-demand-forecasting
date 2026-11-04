@@ -38,6 +38,12 @@ def main() -> None:
         help="Audit directory whose summary counts should be reconciled",
     )
 
+    labels = commands.add_parser(
+        "build-labels", help="Freeze client thresholds and build target labels"
+    )
+    labels.add_argument("--processed-dir", type=Path, default=Path("data/processed"))
+    labels.add_argument("--output-dir", type=Path, default=Path("data/labels"))
+
     args = parser.parse_args()
     with args.config.open("rb") as handle:
         config = tomllib.load(handle)
@@ -66,6 +72,22 @@ def main() -> None:
               f"{manifest['counts']['client_day_rows']:,} client-days")
         print(f"Eligible clients: {manifest['counts']['eligible_clients']:,}")
         print(f"Processed outputs: {args.output_dir}")
+    elif args.command == "build-labels":
+        from .labels import build_labels
+
+        manifest = build_labels(
+            args.processed_dir,
+            args.output_dir,
+            config,
+        )
+        print(f"Frozen thresholds: {manifest['counts']['threshold_clients']:,} clients")
+        print(f"Labeled days: {manifest['counts']['labeled_days']:,}")
+        for split, stats in manifest["prevalence_by_split"].items():
+            print(
+                f"  {split}: n={stats['n']:,} positives={stats['positives']:,} "
+                f"prevalence={stats['prevalence']:.4f}"
+            )
+        print(f"Label outputs: {args.output_dir}")
 
 
 if __name__ == "__main__":

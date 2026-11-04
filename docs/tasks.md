@@ -1,8 +1,9 @@
 # Project roadmap
 
-**Current status:** The source audit and analysis-ready data build are complete.
-The next milestone is to freeze client thresholds and create target labels. No
-modeling result or final-test metric exists yet.
+**Current status:** The source audit, analysis-ready data build, and frozen
+client thresholds with target labels are complete. The next milestone is to
+construct leakage-safe modeling examples. No modeling result or final-test
+metric exists yet.
 
 This is the project's ordered implementation plan. Check off an item only when
 its code, focused tests, generated-output manifest, and documentation agree.
@@ -72,20 +73,20 @@ published counts reconcile with the completed audit.
 
 ## Milestone 2: Freeze thresholds and target labels
 
-- [ ] Implement one explicit percentile definition and record it. The audit
+- [x] Implement one explicit percentile definition and record it. The audit
   currently has a nearest-rank helper, but the modeling threshold estimator has
   not been formally chosen.
-- [ ] For each of the 342 eligible clients, calculate the 90th percentile of
+- [x] For each of the 342 eligible clients, calculate the 90th percentile of
   model-valid daily peaks from activated 2012–2013 training days only.
-- [ ] Save a threshold table with client, threshold kW, estimator, fitting-date
+- [x] Save a threshold table with client, threshold kW, estimator, fitting-date
   bounds, contributing-day count, source/build identity, and fitted timestamp.
-- [ ] Add `target = 1` only when a valid target day's peak is strictly greater
+- [x] Add `target = 1` only when a valid target day's peak is strictly greater
   than the frozen client threshold; leave invalid target days out of modeled
   examples rather than assigning them a negative label.
-- [ ] Report positive/negative counts and prevalence by split, client, month,
+- [x] Report positive/negative counts and prevalence by split, client, month,
   and weekday. Treat later-period prevalence as an observed result, not as 10%
   by construction.
-- [ ] Test the strict `>` boundary, percentile behavior for small/tied samples,
+- [x] Test the strict `>` boundary, percentile behavior for small/tied samples,
   training-only provenance, minimum 180-day rule, and target-date split edges.
 
 **Milestone 2 is done when:** every eligible client has one reproducible frozen
@@ -96,10 +97,12 @@ can influence a threshold.
 
 Resolve these decisions before inspecting final-test performance:
 
-- [ ] Choose and document the missing-history policy. Recommended initial rule:
-  require the full 14-day history for model examples, preserve genuine zero-use
-  days, and report excluded rows; add imputation only if the resulting coverage
-  is inadequate.
+- [x] Choose and document the missing-history policy. Rolling features require
+  at least 12 of the 14 prior days valid and use the available valid days plus a
+  `history_valid_days` feature; lag features fall back to the most recent valid
+  same-type day with a flag; exclusions are reported. Requiring the full 14 days
+  would drop the two weeks after every daylight-saving change (calibration
+  coverage 85.7% versus ~100%).
 - [ ] Define the training-fitted recent “high-use” cutoff and any per-client
   scaling. Store fitted values and provenance just like target thresholds.
 - [ ] Create a feature registry containing name, units, source fields, lookback
@@ -240,12 +243,12 @@ that each feature and fitted rule was available before its target day.
 | --- | --- | --- |
 | Source timestamp and daylight-saving assignment | Complete before data build | Fixed in [data audit](data_audit.md) |
 | Activation and valid-day criteria | Complete before data build | Fixed in [data audit](data_audit.md) |
-| Percentile estimator for client thresholds | Before Milestone 2 labels | TBD |
-| Missing-history policy | Before Milestone 3 examples | TBD; recommendation above |
-| Training-derived high-use and scaling rules | Before Milestone 3 examples | TBD |
+| Percentile estimator for client thresholds | Before Milestone 2 labels | Fixed: nearest-rank, k = ceil(0.9·n) over model-valid post-activation 2012–2013 daily peaks; target is strictly `>` |
+| Missing-history policy | Before Milestone 3 examples | Fixed: rolling features require ≥12 of the 14 prior days valid and use available valid days plus a `history_valid_days` feature; lag features fall back to the most recent valid same-type day with a flag; exclusions reported. Full-14 would drop the two weeks after every DST change (calibration coverage 85.7% vs ~100%). |
+| Training-derived high-use and scaling rules | Before Milestone 3 examples | Fixed: high-use = client's training nearest-rank 75th-percentile daily peak; load features scaled by client's training median daily peak |
 | Treatment of flagged extreme values | Before final protocol; sensitivity may follow | Flagged and retained unless confirmed erroneous |
 | Feature set and model hyperparameters | End of selection period analysis | TBD |
-| PR-area estimator and probability calibration method | Before calibration/final test | TBD; metric recommendation above |
-| Alert budget/threshold and deterministic tie rule | End of calibration period analysis | 10% budget required for reporting; exact rule TBD |
-| Cluster construction and stability rule | Before subgroup test analysis | TBD |
+| PR-area estimator and probability calibration method | Before calibration/final test | Fixed: average precision (scikit-learn), Brier score; Platt scaling fit on Apr–Jun 2014; raw and calibrated both reported. Known risk: calibration-period prevalence (~4.6%) is far below test (~10%); ranking metrics are primary. |
+| Alert budget/threshold and deterministic tie rule | End of calibration period analysis | Fixed: global top 10% of client-days per split by descending risk, ties broken by ascending (client_id, target_date) |
+| Cluster construction and stability rule | Before subgroup test analysis | Fixed: k-means on normalized mean training-period 24-hour profiles, k in 3–6 chosen by silhouette, stability by client bootstrap |
 | Any date-split change | Before inspecting final test | No change planned |

@@ -2,8 +2,8 @@
 
 Research project to predict the probability that an electricity client will have an unusually high demand peak the next day, using readings available at the end of the current day.
 
-**Status:** Source audit and analysis-ready data build complete; targets,
-modeling, and results are TBD.
+**Status:** Source audit, analysis-ready data build, and frozen client
+thresholds with target labels complete; modeling and results are TBD.
 
 ## Set up and reproduce the data
 
@@ -17,6 +17,7 @@ python3 -m venv .venv
 .venv/bin/demand-forecast download
 .venv/bin/demand-forecast audit
 .venv/bin/demand-forecast build-data
+.venv/bin/demand-forecast build-labels
 .venv/bin/python -m pytest -q
 ```
 
@@ -30,6 +31,22 @@ produces:
 - `catalog.duckdb`: views over all three Parquet tables.
 - `manifest.json`: source/configuration identity, dependency versions, schemas,
   checksums, counts, runtime, and audit reconciliation.
+
+`build-labels` freezes each eligible client's nearest-rank 90th-percentile
+training threshold and writes to ignored `data/labels/`:
+
+- `client_thresholds.parquet`: 342 frozen thresholds with rank, contributing-day
+  counts, fit bounds, and provenance.
+- `labeled_days.parquet`: 366,364 eligible client target days with split and a
+  strict `peak > threshold` target (train 242,218; selection 30,438;
+  calibration 31,122; test 62,586).
+- `prevalence_by_split.csv`, `prevalence_by_client.csv`,
+  `prevalence_by_month.csv`, `prevalence_by_weekday.csv`: positive/negative
+  counts and observed prevalence by group.
+- `catalog.duckdb`: views over both Parquet tables.
+- `labels_manifest.json`: input/configuration identity, estimator definition,
+  schemas, checksums, counts, exclusion counts, and the training-only
+  provenance check.
 
 The completed full build matches the audit counts, including 537,610
 model-valid client-days and 342 eligible clients. To use an existing unchanged

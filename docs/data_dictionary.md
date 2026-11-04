@@ -1,8 +1,8 @@
 # Data dictionary
 
-**Status:** Source audit outputs and analysis-ready interval, client-day, and
-eligibility tables exist. Thresholds, labels, features, and predictions have not
-been built.
+**Status:** Source audit outputs, analysis-ready interval, client-day, and
+eligibility tables, and frozen client thresholds with target labels exist.
+Features and predictions have not been built.
 
 ## Source and units
 
@@ -91,11 +91,76 @@ few valid training days after activation.
 | `eligible` | boolean | Meets the configured 180-day primary-study requirement. |
 | `exclusion_reason` | string | Empty, `no_sustained_activation_by_training_end`, or `insufficient_valid_training_days`. |
 
+## Label outputs
+
+The `build-labels` command writes these ignored local files under
+`data/labels/` from `data/processed/`. `labels_manifest.json` records input
+paths and checksums, the processed manifest and source SHA-256, configuration
+identity, dependency versions, the estimator definition, output schemas,
+checksums, counts, excluded target-day counts by reason, split prevalence, and
+the training-only provenance check. `catalog.duckdb` exposes views named
+`client_thresholds` and `labeled_days` over the Parquet files.
+
+### `client_thresholds.parquet`
+
+Grain and key: one row per eligible `client_id`, ordered by `client_id`. Each
+threshold is the nearest-rank 90th percentile (`k = ceil(0.9 × n)`, the k-th
+smallest value) of the client's model-valid post-activation daily peaks dated
+2012-01-01 through 2013-12-31.
+
+| Field | Type | Meaning |
+| --- | --- | --- |
+| `client_id` | string | Source client identifier. |
+| `threshold_kw` | double | Frozen 90th-percentile training daily peak in kW. |
+| `estimator` | string | Always `nearest_rank`. |
+| `percentile` | double | Configured percentile probability (0.9). |
+| `rank_index` | integer | Nearest-rank index `k = ceil(percentile × contributing_days)`. |
+| `contributing_days` | integer | Model-valid post-activation training days used; equals `valid_training_days_after_activation`. |
+| `days_at_threshold` | integer | Contributing days whose peak equals the threshold. |
+| `training_positive_days` | integer | Contributing days whose peak is strictly above the threshold. |
+| `fit_start` / `fit_end` | date | Configured training bounds (2012-01-01 to 2013-12-31). |
+| `first_fit_date` / `last_fit_date` | date | Actual earliest and latest contributing day. |
+| `source_sha256` | string | SHA-256 of the unchanged source archive from the processed manifest. |
+| `processed_manifest_sha256` | string | SHA-256 of the processed build manifest used as input. |
+| `fitted_at_utc` | timestamp | Single run timestamp for this label build. |
+
+### `labeled_days.parquet`
+
+Grain and key: one row per eligible `client_id` × `target_date`, ordered by
+`client_id`, `target_date`. Only model-valid post-activation days dated
+2012-01-01 through 2014-12-31 appear; invalid and pre-activation days are
+omitted rather than labeled negative, and dates before 2012 or after the test
+end are excluded.
+
+| Field | Type | Meaning |
+| --- | --- | --- |
+| `client_id` | string | Source client identifier. |
+| `target_date` | date | Local date being labeled. |
+| `split` | string | `train`, `selection`, `calibration`, or `test`, assigned from `target_date`. |
+| `daily_peak_kw` | double | Maximum accepted 15-minute power reading in kW. |
+| `threshold_kw` | double | Frozen client threshold in kW. |
+| `target` | tinyint | 1 when `daily_peak_kw > threshold_kw` strictly, else 0. |
+
+### Prevalence CSVs
+
+Deterministic positive/negative counts over `labeled_days.parquet` with
+`prevalence = positives / n` rounded to six decimals:
+
+| File | Grouping columns |
+| --- | --- |
+| `prevalence_by_split.csv` | `split` (ordered train, selection, calibration, test) |
+| `prevalence_by_client.csv` | `client_id`, `split` |
+| `prevalence_by_month.csv` | `split`, `year`, `month` |
+| `prevalence_by_weekday.csv` | `split`, `iso_weekday` (1 = Monday), `weekday_name` |
+
+Each file then has `n`, `positives`, `negatives`, and `prevalence` columns.
+Later-period prevalence is an observed result, not 10% by construction.
+
 ## Planned modeling table
 
 | Table | Grain | Required fields |
 | --- | --- | --- |
 | `modeling_examples` | Client × target local date | `client_id`, `forecast_date`, `target_date`, `feature_cutoff`, chronological split, past-only features, frozen `threshold_kw`, and binary target. |
 
-The spike threshold, labels, features, modeling examples, and predictions are
-**TBD** until the remaining roadmap milestones are implemented.
+Features, modeling examples, and predictions are **TBD** until the remaining
+roadmap milestones are implemented.
