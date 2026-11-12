@@ -1,8 +1,8 @@
 # Data dictionary
 
 **Status:** Source audit outputs, analysis-ready interval, client-day, and
-eligibility tables, frozen client thresholds with target labels, and
-leakage-safe modeling examples exist. Predictions have not been built.
+eligibility tables, and frozen client thresholds with target labels exist.
+Features and predictions have not been built.
 
 ## Source and units
 
@@ -156,73 +156,11 @@ Deterministic positive/negative counts over `labeled_days.parquet` with
 Each file then has `n`, `positives`, `negatives`, and `prevalence` columns.
 Later-period prevalence is an observed result, not 10% by construction.
 
-## Example outputs
+## Planned modeling table
 
-The `build-examples` command writes these ignored local files under
-`data/examples/` from `data/processed/` and `data/labels/`.
-`examples_manifest.json` records input checksums, configuration identity, the
-missing-history policy text, output schemas and checksums, example and
-exclusion counts, and a lineage check proving no feature used data after its
-`feature_cutoff`. `catalog.duckdb` exposes views named `modeling_examples` and
-`client_scaling`.
-
-A **valid history day** is a `client_day` row with `model_valid` and
-`post_activation` for an eligible client, on any date including 2011 warm-up.
-Load features aggregate only valid history days on or before
-`feature_cutoff = target_date - 1 day`.
-
-### `client_scaling.parquet`
-
-Grain and key: one row per `client_id` for all 342 eligible clients, ordered by
-`client_id`.
-
-| Field | Type | Meaning |
+| Table | Grain | Required fields |
 | --- | --- | --- |
-| `client_id` | string | Source client identifier. |
-| `scale_kw` | double | Load-feature denominator; the frozen `threshold_kw`. |
-| `high_use_kw` | double | Training nearest-rank 75th-percentile daily peak in kW. |
-| `high_use_percentile` | double | Configured percentile probability (0.75). |
-| `contributing_days` | integer | Training days used; equals `client_thresholds.contributing_days`. |
-| `fit_start` / `fit_end` | date | Configured training bounds. |
-| `last_fit_date` | date | Latest contributing training day. |
-| `client_thresholds_sha256` | string | SHA-256 of the `client_thresholds.parquet` input. |
-| `fitted_at_utc` | timestamp | Single run timestamp for this example build. |
+| `modeling_examples` | Client × target local date | `client_id`, `forecast_date`, `target_date`, `feature_cutoff`, chronological split, past-only features, frozen `threshold_kw`, and binary target. |
 
-### `modeling_examples.parquet`
-
-Grain and key: one row per eligible `client_id` × `target_date`, ordered by
-`client_id`, `target_date`, for every `labeled_days` row that passes the
-missing-history policy. The full-data build has 364,820 rows (train 240,674;
-selection 30,438; calibration 31,122; test 62,586); 1,544 train candidates were
-excluded for `insufficient_history`.
-
-| Field | Type | Meaning |
-| --- | --- | --- |
-| `client_id` | string | Source client identifier. |
-| `target_date` | date | Local date being predicted. |
-| `forecast_date` | date | `target_date - 1`; when the forecast is made. |
-| `feature_cutoff` | date | Latest permissible source date for load features (equals `forecast_date`). |
-| `split` | string | `train`, `selection`, `calibration`, or `test`, from `target_date`. |
-| `target` | tinyint | Frozen label: 1 when `daily_peak_kw > threshold_kw`. |
-| `history_first_date` / `history_last_date` | date | Earliest and latest source dates actually used by any load feature. |
-| `history_valid_days` | integer | Valid days in `[target_date-14, target_date-1]`; examples require ≥12. |
-| `lag1_peak_rel`, `lag1_mean_rel`, `lag1_energy_rel` | double | Most recent valid day's peak, mean, and energy divided by `scale_kw` (energy also by 24 hours). |
-| `lag1_age_days` | integer | `target_date` minus the lag1 source date. |
-| `lag1_is_fallback` | tinyint | 1 when `lag1_age_days > 1`. |
-| `lag7_peak_rel`, `lag7_energy_rel`, `lag7_age_days`, `lag7_is_fallback` | mixed | Same-weekday values from the first valid of t-7, t-14, t-21, t-28. |
-| `roll3/7/14_peak_mean_rel`, `roll7/14_peak_max_rel`, `roll7/14_peak_std_rel` | double | Mean, max, and sample stddev of daily peaks over valid days in the 3-, 7-, or 14-day windows, divided by `scale_kw`. |
-| `change_lag1_vs_roll7`, `change_lag1_vs_lag7` | double | Peak differences in `scale_kw` units. |
-| `high_use_days_7`, `high_use_days_14` | integer | Valid window days with `daily_peak_kw > high_use_kw`. |
-| `spike_days_14` | integer | Valid window days with `daily_peak_kw > threshold_kw`. |
-| `target_iso_weekday`, `target_is_weekend`, `target_month`, `target_month_sin`, `target_month_cos` | mixed | Calendar fields of `target_date`. |
-
-### Count and registry files
-
-| File | Contents |
-| --- | --- |
-| `feature_registry.csv` | One row per feature column: `name`, `units`, `source_fields`, `lookback_days`, `fitting_requirement`, `latest_source_date`. Load features list `forecast_date`; calendar fields list `target_date (calendar only)`. |
-| `example_counts_by_split.csv` | `split`, `n`, `positives`, `negatives`, `prevalence`, in train/selection/calibration/test order. |
-| `example_counts_by_client.csv` | `client_id`, `split`, and the same count columns. |
-| `example_exclusions.csv` | `split`, `reason` (`insufficient_history` or `missing_weekly_lag`), `n`. |
-
-Predictions are **TBD** until the remaining roadmap milestones are implemented.
+Features, modeling examples, and predictions are **TBD** until the remaining
+roadmap milestones are implemented.
