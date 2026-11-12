@@ -1,9 +1,9 @@
 # Project roadmap
 
-**Current status:** The source audit, analysis-ready data build, and frozen
-client thresholds with target labels are complete. The next milestone is to
-construct leakage-safe modeling examples. No modeling result or final-test
-metric exists yet.
+**Current status:** The source audit, analysis-ready data build, frozen client
+thresholds with target labels, and leakage-safe modeling examples are complete.
+The next milestone is to establish baselines and an experiment protocol. No
+modeling result or final-test metric exists yet.
 
 This is the project's ordered implementation plan. Check off an item only when
 its code, focused tests, generated-output manifest, and documentation agree.
@@ -103,25 +103,28 @@ Resolve these decisions before inspecting final-test performance:
   same-type day with a flag; exclusions are reported. Requiring the full 14 days
   would drop the two weeks after every daylight-saving change (calibration
   coverage 85.7% versus ~100%).
-- [ ] Define the training-fitted recent “high-use” cutoff and any per-client
-  scaling. Store fitted values and provenance just like target thresholds.
-- [ ] Create a feature registry containing name, units, source fields, lookback
+- [x] Define the training-fitted recent “high-use” cutoff and any per-client
+  scaling. High-use is the client's training nearest-rank 75th-percentile
+  daily peak, and load features are scaled by the frozen client threshold
+  (the training median is 0 kW for intermittent clients MT_015, MT_223, and
+  MT_347). Store fitted values and provenance just like target thresholds.
+- [x] Create a feature registry containing name, units, source fields, lookback
   window, fitting requirement, and latest permissible source date.
 
 Then implement:
 
-- [ ] Build one example for each eligible client and valid target date with
+- [x] Build one example for each eligible client and valid target date with
   `forecast_date = target_date - 1 day` and `feature_cutoff = forecast_date`.
-- [ ] Add yesterday's peak, mean power, and energy; same-weekday values from one
+- [x] Add yesterday's peak, mean power, and energy; same-weekday values from one
   week earlier; 3-, 7-, and 14-day rolling peak summaries; variability and
   change; recent training-defined high-use counts; and known target-calendar
   fields.
-- [ ] Assign splits from the target date, not the forecast date.
-- [ ] Store feature-lineage evidence or derive it in tests so every load feature
+- [x] Assign splits from the target date, not the forecast date.
+- [x] Store feature-lineage evidence or derive it in tests so every load feature
   is proven to use data no later than its feature cutoff.
-- [ ] Save `modeling_examples` as Parquet and record counts by split, client,
+- [x] Save `modeling_examples` as Parquet and record counts by split, client,
   target class, and exclusion reason.
-- [ ] Test lag/rolling values on hand-calculated fixtures, year/month boundaries,
+- [x] Test lag/rolling values on hand-calculated fixtures, year/month boundaries,
   leap day, daylight-saving gaps, unavailable history, past-only feature use,
   nonoverlapping splits, and deterministic output.
 
@@ -245,7 +248,7 @@ that each feature and fitted rule was available before its target day.
 | Activation and valid-day criteria | Complete before data build | Fixed in [data audit](data_audit.md) |
 | Percentile estimator for client thresholds | Before Milestone 2 labels | Fixed: nearest-rank, k = ceil(0.9·n) over model-valid post-activation 2012–2013 daily peaks; target is strictly `>` |
 | Missing-history policy | Before Milestone 3 examples | Fixed: rolling features require ≥12 of the 14 prior days valid and use available valid days plus a `history_valid_days` feature; lag features fall back to the most recent valid same-type day with a flag; exclusions reported. Full-14 would drop the two weeks after every DST change (calibration coverage 85.7% vs ~100%). |
-| Training-derived high-use and scaling rules | Before Milestone 3 examples | Fixed: high-use = client's training nearest-rank 75th-percentile daily peak; load features scaled by client's training median daily peak |
+| Training-derived high-use and scaling rules | Before Milestone 3 examples | Fixed: high-use = client's training nearest-rank 75th-percentile daily peak; load features scaled by the frozen client threshold (training median is 0 kW for intermittent clients MT_015, MT_223, MT_347) |
 | Treatment of flagged extreme values | Before final protocol; sensitivity may follow | Flagged and retained unless confirmed erroneous |
 | Feature set and model hyperparameters | End of selection period analysis | TBD |
 | PR-area estimator and probability calibration method | Before calibration/final test | Fixed: average precision (scikit-learn), Brier score; Platt scaling fit on Apr–Jun 2014; raw and calibrated both reported. Known risk: calibration-period prevalence (~4.6%) is far below test (~10%); ranking metrics are primary. |

@@ -44,6 +44,13 @@ def main() -> None:
     labels.add_argument("--processed-dir", type=Path, default=Path("data/processed"))
     labels.add_argument("--output-dir", type=Path, default=Path("data/labels"))
 
+    examples = commands.add_parser(
+        "build-examples", help="Build leakage-safe modeling examples"
+    )
+    examples.add_argument("--processed-dir", type=Path, default=Path("data/processed"))
+    examples.add_argument("--labels-dir", type=Path, default=Path("data/labels"))
+    examples.add_argument("--output-dir", type=Path, default=Path("data/examples"))
+
     args = parser.parse_args()
     with args.config.open("rb") as handle:
         config = tomllib.load(handle)
@@ -88,6 +95,23 @@ def main() -> None:
                 f"prevalence={stats['prevalence']:.4f}"
             )
         print(f"Label outputs: {args.output_dir}")
+    elif args.command == "build-examples":
+        from .examples import build_examples
+
+        manifest = build_examples(
+            args.processed_dir,
+            args.labels_dir,
+            args.output_dir,
+            config,
+        )
+        print(f"Modeling examples: {manifest['counts']['examples']:,}")
+        print(f"Excluded candidates: {manifest['counts']['excluded']:,}")
+        for split, stats in manifest["counts"]["examples_by_split"].items():
+            print(
+                f"  {split}: n={stats['n']:,} positives={stats['positives']:,} "
+                f"prevalence={stats['prevalence']:.4f}"
+            )
+        print(f"Example outputs: {args.output_dir}")
 
 
 if __name__ == "__main__":
