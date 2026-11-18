@@ -1,8 +1,9 @@
 # Data dictionary
 
 **Status:** Source audit outputs, analysis-ready interval, client-day, and
-eligibility tables, frozen client thresholds with target labels, and
-leakage-safe modeling examples exist. Predictions have not been built.
+eligibility tables, frozen client thresholds with target labels, leakage-safe
+modeling examples, and baseline experiment predictions exist. Final-test
+results have not been produced.
 
 ## Source and units
 
@@ -225,4 +226,53 @@ excluded for `insufficient_history`.
 | `example_counts_by_client.csv` | `client_id`, `split`, and the same count columns. |
 | `example_exclusions.csv` | `split`, `reason` (`insufficient_history` or `missing_weekly_lag`), `n`. |
 
-Predictions are **TBD** until the remaining roadmap milestones are implemented.
+## Experiment outputs
+
+The `run-baselines` command writes a versioned experiment directory under
+ignored `artifacts/experiments/<experiment_id>/`, where `experiment_id` is
+`exp-` plus the first 12 hex digits of the SHA-256 of the canonical experiment
+record (excluding git state and timestamps), so identical inputs and code
+produce an identical directory name.
+
+### `predictions.parquet`
+
+Grain and key: one row per `model_id` × `client_id` × `target_date`, ordered by
+`model_id`, `split`, `client_id`, `target_date`. Only rows in the configured
+`evaluation_splits` (currently `selection`) appear; train and test rows never
+do, and the test split's targets are never loaded.
+
+| Field | Type | Meaning |
+| --- | --- | --- |
+| `experiment_id` | string | Content-derived experiment identifier. |
+| `model_id` | string | `client_prevalence` or `weekly_pattern`. |
+| `client_id` | string | Source client identifier. |
+| `target_date` | date | Local date being predicted. |
+| `split` | string | Evaluation split. |
+| `target` | tinyint | Frozen label. |
+| `raw_probability` | double | Uncalibrated predicted probability. |
+| `calibrated_probability` | double, nullable | Calibrated probability; null until a calibration method is fitted. |
+| `alert_rank` | integer | Rank within model × split: descending probability, ties by ascending (client_id, target_date). |
+| `alert` | tinyint | 1 when `alert_rank <= ceil(alert_budget_fraction × split n)`. |
+
+### `metrics.json` and `metrics.csv`
+
+One row per `model_id` × `split` with `n`, `positives`, `negatives`,
+`prevalence`, `average_precision` (scikit-learn step-wise PR area), `brier`,
+`alert_budget_fraction`, `alert_count`, `alert_true_positives`,
+`alert_precision`, `alert_recall`, `cutoff_probability`,
+`tied_at_cutoff_total`, and `tied_at_cutoff_alerted`.
+
+### `experiment_record.json`
+
+The signed protocol record: `record_version`, data identity (Parquet and
+manifest SHA-256s plus upstream input hashes), `split_boundaries`,
+`random_seed`, `missing_history_policy`, `feature_set`, `parameter_search`,
+`models`, `estimators` (package/Python/dependency versions),
+`metric_definitions`, `alert_budget_fraction`, `evaluation_splits`,
+`code_sha256` of the metric/baseline/experiment modules, git state, runtime,
+embedded metric rows, and output checksums.
+
+## Planned tables
+
+Predictions from trained models and final-test results are **TBD** until the
+remaining roadmap milestones are implemented.

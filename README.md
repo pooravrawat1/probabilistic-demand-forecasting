@@ -3,8 +3,8 @@
 Research project to predict the probability that an electricity client will have an unusually high demand peak the next day, using readings available at the end of the current day.
 
 **Status:** Source audit, analysis-ready data build, frozen client thresholds
-with target labels, and leakage-safe modeling examples complete; modeling and
-results are TBD.
+with target labels, leakage-safe modeling examples, and baseline experiments
+complete; model training and final results are TBD.
 
 ## Set up and reproduce the data
 
@@ -20,6 +20,7 @@ python3 -m venv .venv
 .venv/bin/demand-forecast build-data
 .venv/bin/demand-forecast build-labels
 .venv/bin/demand-forecast build-examples
+.venv/bin/demand-forecast run-baselines
 .venv/bin/python -m pytest -q
 ```
 
@@ -65,6 +66,26 @@ leakage-safe day-ahead examples to ignored `data/examples/`:
 - `catalog.duckdb`: views over both Parquet tables.
 - `examples_manifest.json`: input/configuration identity, missing-history
   policy, schemas, checksums, counts, and the feature-cutoff lineage check.
+
+`run-baselines` fits the client-prevalence and weekly-pattern baselines on
+training labels only and scores the selection split under the frozen protocol
+(average precision, Brier score, top-10% alert budget with a deterministic
+`(client_id, target_date)` tie-break). Each run writes a content-addressed
+directory under ignored `artifacts/experiments/<experiment_id>/` containing
+`predictions.parquet`, `metrics.json`/`metrics.csv`, and
+`experiment_record.json`.
+
+Selection-period baselines (Jan–Mar 2014, experiment `exp-10fa28cb34bb`;
+30,438 client-days, 2,232 spikes, prevalence 7.33%, 3,044 alerts):
+
+| Baseline | Average precision | Brier | Top-10% precision | Top-10% recall |
+| --- | --- | --- | --- | --- |
+| Client prevalence | 0.0625 | 0.0687 | 0.0818 | 0.1116 |
+| Weekly pattern | 0.1299 | 0.0673 | 0.1541 | 0.2101 |
+
+The client-prevalence baseline ranks below chance (prevalence 0.0733) because
+training spike rates do not carry over to January–March. 89 client-days tie at
+its alert cutoff, so the `(client_id, target_date)` tie-break decides 18 alerts.
 
 The completed full build matches the audit counts, including 537,610
 model-valid client-days and 342 eligible clients. To use an existing unchanged

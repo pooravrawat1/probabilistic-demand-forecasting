@@ -1,9 +1,9 @@
 # Project roadmap
 
 **Current status:** The source audit, analysis-ready data build, frozen client
-thresholds with target labels, and leakage-safe modeling examples are complete.
-The next milestone is to establish baselines and an experiment protocol. No
-modeling result or final-test metric exists yet.
+thresholds with target labels, leakage-safe modeling examples, and the baseline
+experiment protocol are complete. The next milestone is to train and select
+models without touching the test set. No final-test metric exists yet.
 
 This is the project's ordered implementation plan. Check off an item only when
 its code, focused tests, generated-output manifest, and documentation agree.
@@ -134,22 +134,24 @@ enters any feature or fitted preprocessing rule.
 
 ## Milestone 4: Establish baselines and an experiment protocol
 
-- [ ] Create a versioned experiment record containing data/build identity,
+- [x] Create a versioned experiment record containing data/build identity,
   seeds, feature set, parameter search, split boundaries, estimator versions,
   missing-history policy, and metric definitions.
-- [ ] Specify metric details before the final test. Recommended defaults are
-  average precision for PR-curve area, Brier score, and a stable descending-risk
-  ranking with `(client_id, target_date)` as the deterministic tie-breaker for
-  the top 10% alert budget.
-- [ ] Implement a client-specific prevalence baseline fitted on training labels.
-- [ ] Implement the weekly-pattern probability baseline, including smoothing
+- [x] Specify metric details before the final test. Metrics are average
+  precision (scikit-learn `average_precision_score`), Brier score, and a stable
+  descending-risk ranking with `(client_id, target_date)` as the deterministic
+  tie-breaker for the top 10% alert budget. The coarse baselines produce many
+  tied probabilities, so the deterministic tie-break materially affects
+  top-10% metrics; `tied_at_cutoff` counts are reported.
+- [x] Implement a client-specific prevalence baseline fitted on training labels.
+- [x] Implement the weekly-pattern probability baseline, including smoothing
   and missing-week handling, fitted on training data only.
-- [ ] Produce predictions with a common schema: experiment/model ID, client,
+- [x] Produce predictions with a common schema: experiment/model ID, client,
   target date, split, label, raw probability, optional calibrated probability,
   and alert rank/decision.
-- [ ] Assert that all compared methods receive exactly the same evaluation keys
+- [x] Assert that all compared methods receive exactly the same evaluation keys
   and labels.
-- [ ] Add unit tests for baseline fitting, smoothing, unseen/missing cases,
+- [x] Add unit tests for baseline fitting, smoothing, unseen/missing cases,
   probabilities in `[0, 1]`, deterministic ranking, and key equality.
 
 **Milestone 4 is done when:** both baselines run end to end and produce scored,

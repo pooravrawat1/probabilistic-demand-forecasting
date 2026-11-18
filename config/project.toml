@@ -39,3 +39,8 @@ history_window_days = 14
 min_history_valid_days = 12
 weekly_lag_max_weeks = 4
 high_use_percentile = 0.75
+
+[experiment]
+evaluation_splits = ["selection"]
+alert_budget_fraction = 0.10
+weekly_smoothing_strength = 10.0

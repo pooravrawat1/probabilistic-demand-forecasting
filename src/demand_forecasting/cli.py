@@ -51,6 +51,14 @@ def main() -> None:
     examples.add_argument("--labels-dir", type=Path, default=Path("data/labels"))
     examples.add_argument("--output-dir", type=Path, default=Path("data/examples"))
 
+    baselines = commands.add_parser(
+        "run-baselines", help="Fit baseline models and score evaluation splits"
+    )
+    baselines.add_argument("--examples-dir", type=Path, default=Path("data/examples"))
+    baselines.add_argument(
+        "--output-root", type=Path, default=Path("artifacts/experiments")
+    )
+
     args = parser.parse_args()
     with args.config.open("rb") as handle:
         config = tomllib.load(handle)
@@ -112,6 +120,26 @@ def main() -> None:
                 f"prevalence={stats['prevalence']:.4f}"
             )
         print(f"Example outputs: {args.output_dir}")
+    elif args.command == "run-baselines":
+        from .experiment import run_baselines
+
+        record = run_baselines(
+            args.examples_dir,
+            args.output_root,
+            config,
+        )
+        output_dir = args.output_root / record["experiment_id"]
+        print(f"Experiment: {record['experiment_id']}")
+        for row in record["metrics"]:
+            print(
+                f"  {row['model_id']} [{row['split']}]: n={row['n']:,} "
+                f"prevalence={row['prevalence']:.4f} AP={row['average_precision']:.4f} "
+                f"brier={row['brier']:.4f} "
+                f"alert_precision={row['alert_precision']:.4f} "
+                f"alert_recall={row['alert_recall']:.4f} "
+                f"tied_at_cutoff={row['tied_at_cutoff_total']:,}"
+            )
+        print(f"Experiment outputs: {output_dir}")
 
 
 if __name__ == "__main__":
