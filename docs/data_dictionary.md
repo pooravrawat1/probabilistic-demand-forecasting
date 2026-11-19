@@ -272,7 +272,32 @@ manifest SHA-256s plus upstream input hashes), `split_boundaries`,
 `code_sha256` of the metric/baseline/experiment modules, git state, runtime,
 embedded metric rows, and output checksums.
 
+## Model selection outputs
+
+`select-models` writes `artifacts/experiments/<selection_id>/`, where
+`selection_id` is `sel-` plus the first 12 hex digits of the canonical record
+SHA-256 (excluding git state and timestamps).
+
+| File | Contents |
+| --- | --- |
+| `selection_log.csv` | One row per grid configuration: `config_id`, `family`, `feature_set`, `params` (JSON), `converged`, `n_iter`, `fit_seconds`, `status` (`ok`, `selected`, `not_converged`, `failed: <error>`), `warning`, and all `evaluate()` metric fields. |
+| `selected/<family>.pkl` | Pickled fitted sklearn estimator, one per family (`logistic`, `hgb`), with its SHA-256 recorded. |
+| `selection_predictions.parquet` | Same schema as baseline `predictions.parquet` for the two selected models on the selection split; `experiment_id` carries the `sel-` id. |
+| `selection_record.json` | Data identity, seed, feature sets with column lists, full grid, selection rule, selected config and metrics per family, training-state provenance (row count, max train `target_date`, class counts), package versions, code checksums, git state, and output checksums. |
+
+### Calibration outputs
+
+`calibrate-models` writes `calibration/` inside the selection directory and
+verifies each model pickle's SHA-256 against the selection record before
+unpickling.
+
+| File | Contents |
+| --- | --- |
+| `calibration/calibration_predictions.parquet` | Same prediction schema on the calibration split; `calibrated_probability` is filled and `alert`/`alert_rank` use the primary probability (calibrated when selected, raw otherwise). |
+| `calibration/calibration_metrics.csv` | `model_id`, `probability_kind` (`raw`, `platt_oof`, `platt_in_sample`), and all `evaluate()` fields. |
+| `calibration/calibrators.json` | Per model: `slope`, `intercept`, `raw_brier`, `oof_platt_brier`, `in_sample_platt_brier`, `use_calibration`, and the `fold_definition` (5-fold GroupKFold by ISO year-week of `target_date`). |
+| `test_ready.json` | Frozen test-ready configuration: `status`, `sign_off`, data identity, split boundaries, feature sets and selected parameters per model, pickle checksums, calibrator parameters and primary-probability choice, compared methods (both baselines and both selected models), metric and tie-rule definitions, alert budget, code checksums, the explicit statement that the test split was never loaded, and `config_sha256` over the payload excluding sign-off and timestamps. |
+
 ## Planned tables
 
-Predictions from trained models and final-test results are **TBD** until the
-remaining roadmap milestones are implemented.
+Final-test predictions and results are **TBD** until Milestone 6.

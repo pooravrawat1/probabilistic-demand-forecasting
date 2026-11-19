@@ -1,9 +1,10 @@
 # Project roadmap
 
 **Current status:** The source audit, analysis-ready data build, frozen client
-thresholds with target labels, leakage-safe modeling examples, and the baseline
-experiment protocol are complete. The next milestone is to train and select
-models without touching the test set. No final-test metric exists yet.
+thresholds with target labels, leakage-safe modeling examples, baseline
+experiment protocol, and model selection with calibration are complete. The
+test-ready configuration `sel-cd5b7e11cb77` is pending sign-off. The next
+milestone is to run the final evaluation once. No final-test metric exists yet.
 
 This is the project's ordered implementation plan. Check off an item only when
 its code, focused tests, generated-output manifest, and documentation agree.
@@ -159,20 +160,20 @@ reproducible validation predictions on identical rows.
 
 ## Milestone 5: Train and select models without touching the test set
 
-- [ ] Implement logistic regression with training-fitted preprocessing.
-- [ ] Implement the documented tree model (initially histogram gradient
+- [x] Implement logistic regression with training-fitted preprocessing.
+- [x] Implement the documented tree model (initially histogram gradient
   boosting unless evidence supports a different classifier) on the same feature
   and row set.
-- [ ] Use January–March 2014 only to choose features and model settings. Log all
+- [x] Use January–March 2014 only to choose features and model settings. Log all
   tried configurations and the selection rule, including unsuccessful runs.
-- [ ] Freeze the selected raw models and feature set before calibration.
-- [ ] On April–June 2014 only, compare an explicitly named probability
+- [x] Freeze the selected raw models and feature set before calibration.
+- [x] On April–June 2014 only, compare an explicitly named probability
   calibration method against uncalibrated probabilities and choose any alert
   threshold or fixed-budget rule.
-- [ ] Check convergence, degenerate-client/class cases, probability bounds,
+- [x] Check convergence, degenerate-client/class cases, probability bounds,
   serialization/reload equality, deterministic seeds, and absence of selection
   or calibration dates in training-fitted state.
-- [ ] Write a signed-off “test-ready” configuration that fixes data identity,
+- [x] Write a signed-off “test-ready” configuration that fixes data identity,
   examples, features, models, calibration, metrics, tie rule, and alert budget.
 
 **Milestone 5 is done when:** the selected pipeline can be reconstructed from
@@ -252,7 +253,7 @@ that each feature and fitted rule was available before its target day.
 | Missing-history policy | Before Milestone 3 examples | Fixed: rolling features require ≥12 of the 14 prior days valid and use available valid days plus a `history_valid_days` feature; lag features fall back to the most recent valid same-type day with a flag; exclusions reported. Full-14 would drop the two weeks after every DST change (calibration coverage 85.7% vs ~100%). |
 | Training-derived high-use and scaling rules | Before Milestone 3 examples | Fixed: high-use = client's training nearest-rank 75th-percentile daily peak; load features scaled by the frozen client threshold (training median is 0 kW for intermittent clients MT_015, MT_223, MT_347) |
 | Treatment of flagged extreme values | Before final protocol; sensitivity may follow | Flagged and retained unless confirmed erroneous |
-| Feature set and model hyperparameters | End of selection period analysis | TBD |
+| Feature set and model hyperparameters | End of selection period analysis | Fixed by selection run sel-cd5b7e11cb77: logistic `all` feature set with C=1.0; HGB `all` with learning_rate=0.1, max_leaf_nodes=31, min_samples_leaf=200, l2=1.0 |
 | PR-area estimator and probability calibration method | Before calibration/final test | Fixed: average precision (scikit-learn), Brier score; Platt scaling fit on Apr–Jun 2014; raw and calibrated both reported. Known risk: calibration-period prevalence (~4.6%) is far below test (~10%); ranking metrics are primary. |
 | Alert budget/threshold and deterministic tie rule | End of calibration period analysis | Fixed: global top 10% of client-days per split by descending risk, ties broken by ascending (client_id, target_date) |
 | Cluster construction and stability rule | Before subgroup test analysis | Fixed: k-means on normalized mean training-period 24-hour profiles, k in 3–6 chosen by silhouette, stability by client bootstrap |

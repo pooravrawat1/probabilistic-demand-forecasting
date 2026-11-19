@@ -44,3 +44,15 @@ high_use_percentile = 0.75
 evaluation_splits = ["selection"]
 alert_budget_fraction = 0.10
 weekly_smoothing_strength = 10.0
+
+[models]
+selection_metric = "average_precision"
+max_iter_logistic = 2000
+hgb_max_iter = 200
+logistic_C = [0.01, 0.1, 1.0, 10.0]
+hgb_learning_rate = [0.05, 0.1]
+hgb_max_leaf_nodes = [15, 31, 63]
+hgb_min_samples_leaf = [50, 200]
+hgb_l2_regularization = 1.0
+calibration_method = "platt"
+calibration_cv_folds = 5

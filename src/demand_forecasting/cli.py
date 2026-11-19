@@ -59,6 +59,20 @@ def main() -> None:
         "--output-root", type=Path, default=Path("artifacts/experiments")
     )
 
+    selection = commands.add_parser(
+        "select-models", help="Fit the model grid and select per family"
+    )
+    selection.add_argument("--examples-dir", type=Path, default=Path("data/examples"))
+    selection.add_argument(
+        "--output-root", type=Path, default=Path("artifacts/experiments")
+    )
+
+    calibration = commands.add_parser(
+        "calibrate-models", help="Calibrate frozen models on calibration rows"
+    )
+    calibration.add_argument("--selection-dir", type=Path, required=True)
+    calibration.add_argument("--examples-dir", type=Path, default=Path("data/examples"))
+
     args = parser.parse_args()
     with args.config.open("rb") as handle:
         config = tomllib.load(handle)
@@ -140,6 +154,41 @@ def main() -> None:
                 f"tied_at_cutoff={row['tied_at_cutoff_total']:,}"
             )
         print(f"Experiment outputs: {output_dir}")
+    elif args.command == "select-models":
+        from .selection import select_models
+
+        record = select_models(
+            args.examples_dir,
+            args.output_root,
+            config,
+        )
+        print(f"Selection: {record['selection_id']}")
+        for family, choice in record["selected"].items():
+            metrics = choice["metrics"]
+            print(
+                f"  {family}: {choice['config_id']} "
+                f"AP={metrics['average_precision']:.4f} "
+                f"brier={metrics['brier']:.4f} "
+                f"alert_precision={metrics['alert_precision']:.4f} "
+                f"alert_recall={metrics['alert_recall']:.4f}"
+            )
+        print(f"Selection outputs: {args.output_root / record['selection_id']}")
+    elif args.command == "calibrate-models":
+        from .calibration import calibrate_models
+
+        test_ready = calibrate_models(
+            args.selection_dir,
+            args.examples_dir,
+            config,
+        )
+        print(f"Calibrated selection: {test_ready['selection_id']}")
+        for family, model in test_ready["calibration"]["models"].items():
+            print(
+                f"  {family}: slope={model['slope']:.4f} "
+                f"intercept={model['intercept']:.4f} "
+                f"primary={model['primary_probability']}"
+            )
+        print(f"Test-ready config: {args.selection_dir / 'test_ready.json'}")
 
 
 if __name__ == "__main__":

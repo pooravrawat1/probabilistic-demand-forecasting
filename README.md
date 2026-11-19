@@ -3,8 +3,9 @@
 Research project to predict the probability that an electricity client will have an unusually high demand peak the next day, using readings available at the end of the current day.
 
 **Status:** Source audit, analysis-ready data build, frozen client thresholds
-with target labels, leakage-safe modeling examples, and baseline experiments
-complete; model training and final results are TBD.
+with target labels, leakage-safe modeling examples, baseline experiments, and
+model selection with calibration complete; the test-ready configuration is
+pending sign-off and final results are TBD.
 
 ## Set up and reproduce the data
 
@@ -21,6 +22,8 @@ python3 -m venv .venv
 .venv/bin/demand-forecast build-labels
 .venv/bin/demand-forecast build-examples
 .venv/bin/demand-forecast run-baselines
+.venv/bin/demand-forecast select-models
+.venv/bin/demand-forecast calibrate-models --selection-dir artifacts/experiments/<sel-id>
 .venv/bin/python -m pytest -q
 ```
 
@@ -86,6 +89,27 @@ Selection-period baselines (Jan–Mar 2014, experiment `exp-10fa28cb34bb`;
 The client-prevalence baseline ranks below chance (prevalence 0.0733) because
 training spike rates do not carry over to January–March. 89 client-days tie at
 its alert cutoff, so the `(client_id, target_date)` tie-break decides 18 alerts.
+
+`select-models` fits the configured logistic and histogram-gradient-boosting
+grid on training rows only, scores every configuration on the selection split
+(`selection_log.csv`), and freezes one winner per family under
+`artifacts/experiments/<sel-id>/`. `calibrate-models` compares out-of-fold
+Platt scaling against raw probabilities on the calibration split and writes
+the frozen `test_ready.json`. Selection-period model results
+(selection `sel-cd5b7e11cb77`; 30,438 client-days, 3,044 alerts):
+
+| Method | Average precision | Brier | Top-10% precision | Top-10% recall |
+| --- | --- | --- | --- | --- |
+| Client prevalence (baseline) | 0.0625 | 0.0687 | 0.0818 | 0.1116 |
+| Weekly pattern (baseline) | 0.1299 | 0.0673 | 0.1541 | 0.2101 |
+| Logistic (`all`, C=1.0) | 0.6318 | 0.0406 | 0.5135 | 0.7003 |
+| HGB (`all`, lr=0.1, leaves=31, min=200) | 0.6974 | 0.0363 | 0.5506 | 0.7509 |
+
+On the calibration split (31,122 client-days, prevalence 4.61%), raw Brier was
+0.0300 (logistic) and 0.0261 (HGB); out-of-fold Platt Brier was slightly worse
+for both (0.0310 and 0.0265), so `use_calibration=false` and raw probabilities
+remain primary. `test_ready.json` records all frozen choices and is pending
+manual sign-off before the Milestone 6 test run.
 
 The completed full build matches the audit counts, including 537,610
 model-valid client-days and 342 eligible clients. To use an existing unchanged
